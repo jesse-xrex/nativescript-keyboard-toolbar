@@ -27,7 +27,7 @@ export class Toolbar extends ToolbarBase {
   }
 
   protected _loaded(): void {
-    setTimeout(() => this.applyInitialPosition(), 300);
+    setTimeout(() => this.applyInitialPosition(), 800);
 
     setTimeout(() => {
       const prepFocusEvents = (forView) => {
@@ -84,33 +84,34 @@ export class Toolbar extends ToolbarBase {
 
     this.onGlobalLayoutListener = new android.view.ViewTreeObserver.OnGlobalLayoutListener({
       onGlobalLayout(): void {
-        // this can happen during livesync - no problemo
-        if (!that.content.android) {
-          return;
-        }
-
-        const rect = new android.graphics.Rect();
-        that.content.android.getWindowVisibleDisplayFrame(rect);
-
-        const newKeyboardHeight = (Toolbar.getUsableScreenSizeY() - rect.bottom) / screen.mainScreen.scale;
-        if (newKeyboardHeight <= 0 && that.lastKeyboardHeight === undefined) {
-          return;
-        }
-
-        if (newKeyboardHeight === that.lastKeyboardHeight) {
-          return;
-        }
-
-        // TODO see if orientation needs to be accounted for: https://github.com/siebeprojects/samples-keyboardheight/blob/c6f8aded59447748266515afeb9c54cf8e666610/app/src/main/java/com/siebeprojects/samples/keyboardheight/KeyboardHeightProvider.java#L163
-        that.lastKeyboardHeight = newKeyboardHeight;
-
-        if (that.hasFocus) {
-          if (newKeyboardHeight <= 0) {
-            that.hideToolbar(that.content.parent);
-          } else {
-            that.showToolbar(that.content.parent);
+        setTimeout(() => {
+          if (!that.content.android) {
+            return;
           }
-        }
+
+          const rect = new android.graphics.Rect();
+          that.content.android.getWindowVisibleDisplayFrame(rect);
+
+          const newKeyboardHeight = (Toolbar.getUsableScreenSizeY() - rect.bottom) / screen.mainScreen.scale;
+          if (newKeyboardHeight <= 0 && that.lastKeyboardHeight === undefined) {
+            return;
+          }
+
+          if (newKeyboardHeight === that.lastKeyboardHeight) {
+            return;
+          }
+
+          // TODO see if orientation needs to be accounted for: https://github.com/siebeprojects/samples-keyboardheight/blob/c6f8aded59447748266515afeb9c54cf8e666610/app/src/main/java/com/siebeprojects/samples/keyboardheight/KeyboardHeightProvider.java#L163
+          that.lastKeyboardHeight = newKeyboardHeight;
+
+          if (that.hasFocus) {
+            if (newKeyboardHeight <= 0) {
+              that.hideToolbar(that.content.parent);
+            } else {
+              that.showToolbar(that.content.parent);
+            }
+          }
+        }, 800)
       }
     });
 
