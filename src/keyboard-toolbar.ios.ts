@@ -141,7 +141,8 @@ export class Toolbar extends ToolbarBase {
       return;
     }
 
-    const {y} = parent.getLocationOnScreen();
+    const locationOnScreen = parent.getLocationOnScreen();
+    const y = locationOnScreen && locationOnScreen.y ? locationOnScreen.y : 0;
     this.startPositionY = screen.mainScreen.heightDIPs - y - ((this.showWhenKeyboardHidden === true ? newHeight : 0) / screen.mainScreen.scale);
     this.log("_layout, startPositionY: " + this.startPositionY);
 
