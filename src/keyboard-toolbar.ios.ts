@@ -16,6 +16,9 @@ export class Toolbar extends ToolbarBase {
 	private lastHeight: number;
 	private lastKeyboardHeight: number;
 	private keyboardNotificationObserver: any;
+	private hasIQKeyboardManagerInstalled: boolean = false;
+	private iqKeyboardManagerOriginalDistance: number = 0;
+
 
 	protected _loaded(): void {
 		this.keyboardNotificationObserver = application.ios.addNotificationObserver(
@@ -33,14 +36,94 @@ export class Toolbar extends ToolbarBase {
 				this.lastKeyboardHeight = newKeyboardHeight;
 
 				if (!isFirstAnimation && this.hasFocus) {
-					const parent = <View>this.content.parent;
-					parent.translateY =
-						this.startPositionY -
-						newKeyboardHeight -
-						this.lastHeight / screen.mainScreen.scale;
+					const parent = (<View>this.content.parent);
+					showKeyboard(parent);
 				}
 			}
 		);
+
+		const showKeyboard = (parent) => {
+			if (this.hasIQKeyboardManagerInstalled) {
+				IQKeyboardManager.sharedManager().keyboardDistanceFromTextField =
+					this.iqKeyboardManagerOriginalDistance + parent.height;
+			}
+
+			this.hasFocus = true;
+			// wrap in a timeout, to make sure this runs after 'UIKeyboardWillChangeFrameNotification'
+			setTimeout(() => {
+				const animateToY =
+					this.startPositionY -
+					this.lastKeyboardHeight -
+					(this.showWhenKeyboardHidden === true
+						? 0
+						: this.lastHeight / screen.mainScreen.scale);
+				this.log("focus, animateToY: " + animateToY);
+
+				parent
+					.animate({
+						translate: { x: 0, y: animateToY },
+						// see http://cubic-bezier.com/#.17,.67,.69,1.04
+						curve: AnimationCurve.cubicBezier(
+							0.32,
+							0.49,
+							0.56,
+							1
+						),
+						duration: 250,
+					})
+					.then(() => {
+						parent.notify({
+							eventName: Toolbar.heightChangedEvent,
+							object: parent,
+							info: {
+								animateToY: Math.abs(animateToY),
+								lastKeyboardHeight: this
+									.lastKeyboardHeight,
+							},
+						});
+					});
+			}, 150);
+		}
+
+		const hideKeyboard = (parent) => {
+			if (this.hasIQKeyboardManagerInstalled) {
+				IQKeyboardManager.sharedManager().keyboardDistanceFromTextField = this.iqKeyboardManagerOriginalDistance;
+			}
+
+			this.hasFocus = false;
+			setTimeout(() => {
+				const animateToY =
+					this.showWhenKeyboardHidden === true &&
+					this.showAtBottomWhenKeyboardHidden !== true
+						? 0
+						: this.startPositionY;
+				this.log("blur, animateToY: " + animateToY);
+
+				parent
+					.animate({
+						translate: { x: 0, y: animateToY },
+						curve: AnimationCurve.cubicBezier(
+							0.32,
+							0.49,
+							0.56,
+							1
+						), // perhaps make this one a little different as it's the same as the 'show' animation
+						duration: 250,
+					})
+					.then(() => {
+						parent.notify({
+							eventName: Toolbar.heightChangedEvent,
+							object: parent,
+							info: {
+								animateToY: Math.abs(animateToY),
+								lastKeyboardHeight: this.lastKeyboardHeight,
+							},
+						});
+					});
+
+
+			}, 150);
+		}
 
 		const onViewForIdFound = (forView: ViewBase) => {
 			const parent = this.content.parent as View;
@@ -48,9 +131,9 @@ export class Toolbar extends ToolbarBase {
 			// experimental support for non-text widgets.. but not sure if this is useful, so not documenting it yet
 			const isText = forView instanceof EditableTextBase;
 
-			const hasIQKeyboardManagerInstalled =
+			this.hasIQKeyboardManagerInstalled =
 				typeof IQKeyboardManager !== "undefined";
-			const iqKeyboardManagerOriginalDistance = hasIQKeyboardManagerInstalled
+			this.iqKeyboardManagerOriginalDistance = this.hasIQKeyboardManagerInstalled
 				? IQKeyboardManager.sharedManager()
 						.keyboardDistanceFromTextField
 				: 0;
@@ -61,82 +144,11 @@ export class Toolbar extends ToolbarBase {
 					object: forView,
 				});
 				forView.on("focus", () => {
-					if (hasIQKeyboardManagerInstalled) {
-						IQKeyboardManager.sharedManager().keyboardDistanceFromTextField =
-							iqKeyboardManagerOriginalDistance + parent.height;
-					}
-
-					this.hasFocus = true;
-					// wrap in a timeout, to make sure this runs after 'UIKeyboardWillChangeFrameNotification'
-					setTimeout(() => {
-						const animateToY =
-							this.startPositionY -
-							this.lastKeyboardHeight -
-							(this.showWhenKeyboardHidden === true
-								? 0
-								: this.lastHeight / screen.mainScreen.scale);
-						this.log("focus, animateToY: " + animateToY);
-
-						parent
-							.animate({
-								translate: { x: 0, y: animateToY },
-								// see http://cubic-bezier.com/#.17,.67,.69,1.04
-								curve: AnimationCurve.cubicBezier(
-									0.32,
-									0.49,
-									0.56,
-									1
-								),
-								duration: 250,
-							})
-							.then(() => {
-								parent.notify({
-									eventName: Toolbar.heightChangedEvent,
-									object: parent,
-									info: {
-										animateToY: Math.abs(animateToY),
-										lastKeyboardHeight: this
-											.lastKeyboardHeight,
-									},
-								});
-							});
-					}, 0);
+					showKeyboard(parent);
 				});
 
 				forView.on("blur", () => {
-					if (hasIQKeyboardManagerInstalled) {
-						IQKeyboardManager.sharedManager().keyboardDistanceFromTextField = iqKeyboardManagerOriginalDistance;
-					}
-
-					this.hasFocus = false;
-					const animateToY =
-						this.showWhenKeyboardHidden === true &&
-						this.showAtBottomWhenKeyboardHidden !== true
-							? 0
-							: this.startPositionY;
-					this.log("blur, animateToY: " + animateToY);
-
-					parent
-						.animate({
-							translate: { x: 0, y: animateToY },
-							curve: AnimationCurve.cubicBezier(
-								0.32,
-								0.49,
-								0.56,
-								1
-							), // perhaps make this one a little different as it's the same as the 'show' animation
-							duration: 250,
-						})
-						.then(() => {
-							parent.notify({
-								eventName: Toolbar.heightChangedEvent,
-								object: parent,
-								info: {
-									animateToY: Math.abs(animateToY),
-									lastKeyboardHeight: this.lastKeyboardHeight,
-								},
-							});
-						});
+					hideKeyboard(parent);
 				});
 			} else {
 				// it's not a text widget, so just animate the toolbar
