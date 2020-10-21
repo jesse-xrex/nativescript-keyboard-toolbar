@@ -1,6 +1,6 @@
 {
   "name": "nativescript-keyboard-toolbar",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "NativeScript Keyboard Toolbar plugin",
   "main": "keyboard-toolbar",
   "typings": "index.d.ts",
@@ -48,6 +48,7 @@
   "homepage": "https://github.com/EddyVerbruggen/nativescript-keyboard-toolbar",
   "readmeFilename": "README.md",
   "devDependencies": {
+    "@nativescript/core": "~6.3.0",
     "tns-core-modules": "~6.0.0",
     "tns-platform-declarations": "~6.0.0",
     "typescript": "~3.4.0",
