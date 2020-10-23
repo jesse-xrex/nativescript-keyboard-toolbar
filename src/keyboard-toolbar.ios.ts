@@ -187,6 +187,11 @@ export class Toolbar extends ToolbarBase {
 						}
 					}
 					const page = <Page>pg;
+
+					if (this.forView) {
+                        resolve(this.forView)
+					}
+
 					const found =
 						page && page.modal
 							? page.modal.getViewById(this.forId)

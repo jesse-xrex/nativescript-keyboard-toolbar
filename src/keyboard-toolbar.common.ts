@@ -49,6 +49,9 @@ export abstract class ToolbarBase
 
 	protected forId: string;
 
+	/** Customized, allow you to provide a view directly because `forId` is lame */
+	protected forView: View;
+
 	protected showWhenKeyboardHidden: boolean;
 
 	// TODO rename showAtBottomWhenKeyboardHidden to moveToAtBottomWhenKeyboardHidden (?)

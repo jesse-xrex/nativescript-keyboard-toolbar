@@ -44,6 +44,11 @@ export class Toolbar extends ToolbarBase {
 						}
 					}
 					this.thePage = pg;
+
+					if (this.forView) {
+						resolve(this.forView);
+					}
+
 					const forView = <View>this.thePage.getViewById(this.forId);
 
 					if (forView) {
