@@ -42,7 +42,7 @@ export abstract class ToolbarBase
 	content: View;
 	verticalAlignment: VerticalAlignment;
 
-	private static DEBUG = true;
+	private static DEBUG = false;
 
 	// if the keyboard is hidden without blurring the textfield (and vice versa) then the blur/focus events don't fire, so track focus manually
 	protected hasFocus = false;

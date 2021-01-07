@@ -78,9 +78,6 @@ export class Toolbar extends ToolbarBase {
 
 				setTimeout(() => {
 					if (that.lastKeyboardHeight) {
-						console.log(
-							"forView focus, forView focus, forView focus, forView focus, forView focus"
-						);
 						this.showToolbar(<View>this.content.parent);
 					}
 				}, 100);
