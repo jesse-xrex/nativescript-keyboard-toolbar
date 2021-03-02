@@ -4,7 +4,6 @@ import { View } from "tns-core-modules/ui/core/view";
 import { Frame } from "@nativescript/core";
 import { AnimationCurve } from "tns-core-modules/ui/enums";
 import { Page } from "tns-core-modules/ui/page";
-import { TabView } from "tns-core-modules/ui/tab-view";
 import { ad } from "tns-core-modules/utils/utils";
 import { ToolbarBase } from "./keyboard-toolbar.common";
 
@@ -26,12 +25,12 @@ export class Toolbar extends ToolbarBase {
 
 	constructor() {
 		super();
-
 		this.verticalAlignment = "top"; // weird but true
+		this.shouldPreventToolbarDismiss = false;
 	}
 
-	private getViewForId(attemptsLeft: number): Promise<View> {
-		return new Promise<View>((resolve, reject) => {
+	private getViewForId(attemptsLeft: number): Promise<View | View[]> {
+		return new Promise<View | View[]>((resolve, reject) => {
 			if (attemptsLeft-- > 0) {
 				setTimeout(() => {
 					let pg;
@@ -49,7 +48,14 @@ export class Toolbar extends ToolbarBase {
 						resolve(this.forView);
 					}
 
-					const forView = <View>this.thePage.getViewById(this.forId);
+					let forView: View | View[];
+					if (Array.isArray(this.forId)) {
+						forView = this.forId.map((id) => {
+						return <View>this.thePage.getViewById(id);
+						});
+					} else {
+						forView = <View>this.thePage.getViewById(this.forId);
+					}
 
 					if (forView) {
 						resolve(forView);
@@ -58,7 +64,7 @@ export class Toolbar extends ToolbarBase {
 							.then(resolve)
 							.catch(reject);
 					}
-				}, attemptsLeft * 15);
+				}, attemptsLeft * 50);
 			} else {
 				reject();
 			}
@@ -69,14 +75,20 @@ export class Toolbar extends ToolbarBase {
 		setTimeout(() => this.applyInitialPosition(), WAIT_FOR_INIT_POSITION);
 
 		const onViewForIdFound = (forView: View) => {
+			// If the embed text field has been focused before we apply the event listener, we should show the tool bar manually.
+			if(this.hasFocus && that.lastKeyboardHeight) {
+                this.showToolbar(<View>this.content.parent);
+            }
 			forView.notify({
 				eventName: Toolbar.viewFoundedEvent,
 				object: forView,
 			});
 			forView.on("focus", () => {
 				this.hasFocus = true;
+				this.shouldPreventToolbarDismiss = true;
 
 				setTimeout(() => {
+					this.shouldPreventToolbarDismiss = false;
 					if (that.lastKeyboardHeight) {
 						this.showToolbar(<View>this.content.parent);
 					}
@@ -86,13 +98,23 @@ export class Toolbar extends ToolbarBase {
 			forView.on("blur", () => {
 				this.hasFocus = false;
 				setTimeout(() => {
+					if (this.shouldPreventToolbarDismiss) {
+						this.shouldPreventToolbarDismiss = false;
+						return;
+					}
 					this.hideToolbar(<View>this.content.parent);
 				}, 0);
 			});
 		};
 
 		this.getViewForId(ATTEMPT_TIMES)
-			.then((view) => onViewForIdFound(view))
+			.then((view) => {
+				if(Array.isArray(view)) {
+                    view.forEach(viewItem => {onViewForIdFound(viewItem)});
+                } else {
+                    onViewForIdFound(view);
+                }
+			})
 			.catch(() =>
 				console.log(
 					`\n⌨ ⌨ ⌨ Please make sure forId="<view id>" resolves to a visible view, or the toolbar won't render correctly! Example: <Toolbar forId="${

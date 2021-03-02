@@ -41,6 +41,7 @@ export abstract class ToolbarBase
 	implements AddChildFromBuilder {
 	content: View;
 	verticalAlignment: VerticalAlignment;
+	shouldPreventToolbarDismiss: boolean;
 
 	private static DEBUG = false;
 
